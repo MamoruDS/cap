@@ -131,20 +131,19 @@ const parser = <T extends Options>(
     }
     for (const key of Object.keys(options)) {
         const opt = options[key] as Option<'string'>
+        _args[key] = _args[key] ?? opt.default
+        if (opt.fn) opt.fn(_args[key], Cap)
+    }
+    for (const key of Object.keys(options)) {
+        const opt = options[key]
         if (typeof _args[key] == 'undefined') {
-            if (!opt.optional) {
+            if (!opt.optional && typeof opt.default == 'undefined') {
                 UTILS.panic({
                     description: `Missing required argument: ${key}`,
                 })
             }
-            _args[key] = opt.default
         }
-        if (opt.fn) {
-            opt.fn(_args[key], Cap)
-        }
-        if (opt._hide) {
-            delete _args[key]
-        }
+        if (opt._hide) delete _args[key]
     }
     return _args as OptionsVal<T>
 }
