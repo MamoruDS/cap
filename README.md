@@ -2,24 +2,26 @@
 
 Simple cli arguments parser written in TypesScript for node/Deno
 
+[![npm](https://img.shields.io/npm/v/@mamoruds/cap.svg?style=flat-square)](https://www.npmjs.com/package/@mamoruds/cap)
+
 ## Installation
 
 ### nodejs
 
 ```shell
-npm i cap-js
+npm i @mamoruds/cap
 ```
 
 ### Deno
 
 ```typescript
-
+import { Cap } from 'https://deno.land/x/cap/cap-deno.ts'
 ```
 
 ## Usage
 
 ```typescript
-import { Cap } from 'cap-js'
+import { Cap } from '@mamoruds/cap'
 
 const cap = new Cap({
     name: {
@@ -43,6 +45,14 @@ const cap = new Cap({
 })
     .about('cap-js-example-node')
     .parse(process.argv.slice(2))
+
+console.log(cap)
+
+// $ node script.js -n mamoru --no-silent
+// or using Deno
+// $ deno run script.js -n mamoru --no-silent
+// output
+// { name: 'mamoru', silent: false, age: undefined }
 ```
 
 ## License
