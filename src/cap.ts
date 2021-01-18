@@ -1,4 +1,16 @@
-import { println, panic, deepCopy, exit } from './utils.ts'
+type Utils = {
+    print: (out: string) => void
+    println: (out: string) => void
+    exit: (code: number) => never
+    panic: (message: {
+        ok?: boolean
+        description?: string
+        error?: Error
+    }) => never
+    deepCopy: <T>(object: T) => T
+}
+
+const UTILS = {} as Utils
 
 const SEP_LEN = 2
 
@@ -54,13 +66,13 @@ const parser = <T extends Options>(
     const _add = (key?: string, val?: string) => {
         if (typeof key == 'undefined') {
             // key undefined
-            panic({ description: `No such sub-command '${val}'` })
+            UTILS.panic({ description: `No such sub-command '${val}'` })
         } else {
             const _key = _opts[key]
             const type = options[_key]?.type
             if (!type) {
                 // key not defined
-                panic({ description: `Unknown option '${key}'` })
+                UTILS.panic({ description: `Unknown option '${key}'` })
             }
             if (!val) {
                 // init
@@ -121,7 +133,9 @@ const parser = <T extends Options>(
         const opt = options[key] as Option<'string'>
         if (typeof _args[key] == 'undefined') {
             if (!opt.optional) {
-                panic({ description: `Missing required argument: ${key}` })
+                UTILS.panic({
+                    description: `Missing required argument: ${key}`,
+                })
             }
             _args[key] = opt.default
         }
@@ -204,8 +218,8 @@ const BUILTIN = {
                 }
                 _lns.push(optlns.map((l) => _join(l, '')).join('\n'))
 
-                println(_lns.filter((l) => l.length).join('\n\n'))
-                exit(0)
+                UTILS.println(_lns.filter((l) => l.length).join('\n\n'))
+                UTILS.exit(0)
             }
         },
         _hide: true,
@@ -225,8 +239,8 @@ const BUILTIN = {
                         .filter((i) => typeof i != 'undefined')
                         .join(separator)
                 }
-                println(_join([Cap._name, Cap._version], ' '))
-                exit(0)
+                UTILS.println(_join([Cap._name, Cap._version], ' '))
+                UTILS.exit(0)
             }
         },
         _hide: true,
@@ -241,7 +255,7 @@ class Cap<T extends Options> {
     _about?: string
     _options: T
     constructor(options: T) {
-        this._builtIn = deepCopy(BUILTIN) as Options
+        this._builtIn = UTILS.deepCopy(BUILTIN) as Options
         this._options = options
     }
     version(value: string): Cap<T> {
@@ -282,4 +296,4 @@ class Cap<T extends Options> {
     }
 }
 
-export { Cap }
+export { UTILS, Cap }

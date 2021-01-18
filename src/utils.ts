@@ -1,15 +1,23 @@
-import { exit as _exit, stdout } from 'process'
+export type Plat = {
+    exit: (code: number) => never
+    stdout: {
+        write: (out: string) => void
+    }
+    args: string[]
+}
+
+const PLAT = {} as Plat
 
 const print = (output: string): void => {
-    stdout.write(output)
+    PLAT.stdout.write(output)
 }
 
 const println = (output: string): void => {
     print(output + '\n')
 }
 
-const exit = (code: number): never => {
-    return _exit(code) as never
+const exit = (code: number = 0): never => {
+    return PLAT.exit(code) as never
 }
 
 const panic = (message: {
@@ -61,5 +69,7 @@ const deepCopy = <T extends _HashMap>(source: T): T => {
     }
     return _t as T
 }
+
+export { PLAT }
 
 export { print, println, panic, deepCopy, exit }
