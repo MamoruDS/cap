@@ -1,4 +1,4 @@
-import { println, panic, deepCopy, exit } from './utils'
+import { println, panic, deepCopy, exit } from './utils.ts'
 
 const SEP_LEN = 2
 
@@ -21,7 +21,7 @@ type Option<
     default?: TypeConv<T>
     optional?: boolean
     about?: string
-    fn?: (value: TypeConv<T>, CLIAP: CLIAP<C>) => Promise<void>
+    fn?: (value: TypeConv<T>, Cap: Cap<C>) => Promise<void>
     _hide?: boolean
 }
 
@@ -40,50 +40,51 @@ type OptionsVal<T extends Options> = {
 const parser = <T extends Options>(
     args: string[],
     options: T,
-    CLIAP: CLIAP<T>
+    Cap: Cap<T>
 ): OptionsVal<T> => {
     let _k: string | undefined
     const _args = {} as { [key: string]: any }
     const _opts = {} as { [key: string]: string }
     for (const key of Object.keys(options)) {
         _opts[key] = key
-        _opts[options[key].alias] = key
+        _opts[options[key]?.alias ?? '_'] = key
     }
-    delete _opts['undefined']
+    delete _opts['_']
 
-    const _add = (key: string, val?: string) => {
-        if (!key) {
+    const _add = (key?: string, val?: string) => {
+        if (typeof key == 'undefined') {
             // key undefined
-            panic({ description: `No such subcommand '${val}'` })
-        }
-        const _key = _opts[key]
-        const type = options[_key]?.type
-        if (!type) {
-            // key not defined
-            panic({ description: `Unknown option '${key}'` })
-        }
-        if (!val) {
-            // init
-            if (type != 'boolean') {
-                _k = _key
-                _args[_key] = null
-            } else {
-                _args[_key] = true
-            }
+            panic({ description: `No such sub-command '${val}'` })
         } else {
-            // add new val
-            if (type == 'string') {
-                _args[_key] = val
+            const _key = _opts[key]
+            const type = options[_key]?.type
+            if (!type) {
+                // key not defined
+                panic({ description: `Unknown option '${key}'` })
             }
-            if (type == 'number') {
-                _args[_key] = parseInt(val)
-            }
-            if (type == 'boolean') {
-                _args[_key] = val == 'true' ? true : false
-            }
-            if (type == 'array') {
-                if (!_args[_key]) _args[_key] = []
-                _args[_key].push(val)
+            if (!val) {
+                // init
+                if (type != 'boolean') {
+                    _k = _key
+                    _args[_key] = null
+                } else {
+                    _args[_key] = true
+                }
+            } else {
+                // add new val
+                if (type == 'string') {
+                    _args[_key] = val
+                }
+                if (type == 'number') {
+                    _args[_key] = parseInt(val)
+                }
+                if (type == 'boolean') {
+                    _args[_key] = val == 'true' ? true : false
+                }
+                if (type == 'array') {
+                    if (!_args[_key]) _args[_key] = []
+                    _args[_key].push(val)
+                }
             }
         }
     }
@@ -125,7 +126,7 @@ const parser = <T extends Options>(
             _args[key] = opt.default
         }
         if (opt.fn) {
-            opt.fn(_args[key], CLIAP)
+            opt.fn(_args[key], Cap)
         }
         if (opt._hide) {
             delete _args[key]
@@ -140,17 +141,20 @@ const BUILTIN = {
         alias: 'h',
         optional: true,
         about: 'Display help message',
-        fn: async (val: boolean, CLIAP: CLIAP<Options>) => {
+        fn: async (val: boolean, Cap: Cap<Options>) => {
             if (val) {
-                const _join = (input: string[], separator: string): string => {
+                const _join = (
+                    input: (string | undefined)[],
+                    separator: string
+                ): string => {
                     return input
                         .filter((i) => typeof i != 'undefined')
                         .join(separator)
                 }
                 const _defaultParse = (
                     d?: string | number | boolean | string[]
-                ): string => {
-                    let _d: string
+                ): string | undefined => {
+                    let _d: string | undefined
                     if (typeof d == undefined) {
                         //
                     } else if (typeof d == 'string') {
@@ -165,17 +169,17 @@ const BUILTIN = {
                     return _d
                 }
 
-                const lns: string[][] = []
-                lns.push([CLIAP._name, CLIAP._version])
-                lns.push([CLIAP._about])
+                const lns: (string | undefined)[][] = []
+                lns.push([Cap._name, Cap._version])
+                lns.push([Cap._about])
 
                 const _lns: string[] = []
                 for (const li in lns) {
                     _lns.push(_join(lns[li], ' '))
                 }
 
-                const opts = CLIAP.options()
-                const optlns: string[][] = []
+                const opts = Cap.options()
+                const optlns: (string | undefined)[][] = []
                 let mw = 0
                 for (const opt of Object.keys(opts)) {
                     const sl0 = _join(
@@ -195,7 +199,7 @@ const BUILTIN = {
                     optlns[li].splice(
                         1,
                         0,
-                        ' '.repeat(mw + SEP_LEN - optlns[li][0].length)
+                        ' '.repeat(mw + SEP_LEN - (optlns[li][0]?.length ?? 0))
                     )
                 }
                 _lns.push(optlns.map((l) => _join(l, '')).join('\n'))
@@ -210,15 +214,18 @@ const BUILTIN = {
         type: 'boolean',
         alias: 'V',
         optional: true,
-        about: 'Show version',
-        fn: async (val: boolean, CLIAP: CLIAP<Options>) => {
+        about: 'Display version info',
+        fn: async (val: boolean, Cap: Cap<Options>) => {
             if (val) {
-                const _join = (input: string[], separator: string): string => {
+                const _join = (
+                    input: (string | undefined)[],
+                    separator: string
+                ): string => {
                     return input
                         .filter((i) => typeof i != 'undefined')
                         .join(separator)
                 }
-                println(_join([CLIAP._name, CLIAP._version], ' '))
+                println(_join([Cap._name, Cap._version], ' '))
                 exit(0)
             }
         },
@@ -226,37 +233,37 @@ const BUILTIN = {
     },
 }
 
-class CLIAP<T extends Options> {
+class Cap<T extends Options> {
     private _builtIn: Options
-    _version: string
-    _name: string
-    _author: string
-    _about: string
+    _version?: string
+    _name?: string
+    _author?: string
+    _about?: string
     _options: T
     constructor(options: T) {
-        this._builtIn = deepCopy(BUILTIN)
+        this._builtIn = deepCopy(BUILTIN) as Options
         this._options = options
     }
-    version(value: string): CLIAP<T> {
+    version(value: string): Cap<T> {
         this._version = value
         return this
     }
-    name(value: string): CLIAP<T> {
+    name(value: string): Cap<T> {
         this._name = value
         return this
     }
-    author(value: string): CLIAP<T> {
+    author(value: string): Cap<T> {
         this._author = value
         return this
     }
-    about(value: string): CLIAP<T> {
+    about(value: string): Cap<T> {
         this._about = value
         return this
     }
     parse(args: string[]): OptionsVal<T> {
         return parser(args, this.options(), this)
     }
-    disable<B extends keyof typeof BUILTIN>(option: B): CLIAP<T> {
+    disable<B extends keyof typeof BUILTIN>(option: B): Cap<T> {
         delete this._builtIn[option]
         return this
     }
@@ -275,4 +282,4 @@ class CLIAP<T extends Options> {
     }
 }
 
-export { CLIAP }
+export { Cap }

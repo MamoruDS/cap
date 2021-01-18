@@ -8,53 +8,58 @@ const println = (output: string): void => {
     print(output + '\n')
 }
 
-const exit = (code: number) => {
-    _exit(code)
+const exit = (code: number): never => {
+    return _exit(code) as never
 }
 
 const panic = (message: {
     ok?: boolean
     description?: string
     error?: Error
-}) => {
+}): never => {
     console.error({ ok: false, ...message })
-    exit(1)
+    return exit(1)
 }
+
+type _HashMap = { [key in string | number]: any }
 
 const copy = <T>(source: T): T => {
     if (source == null) return source
-    if (Array.isArray(source)) {
+    else if (Array.isArray(source)) {
         const _t = [] as any[]
         source.forEach((v) => {
             _t.push(copy(v))
         })
         return _t as any
-    }
-    if (typeof source === 'object') {
-        if (source.constructor.name !== 'Object') {
+    } else if (typeof source === 'object') {
+        // https://github.com/Microsoft/TypeScript/issues/6373
+        const _s = source as { constructor: { name?: string } }
+        if (_s.constructor.name !== 'Object') {
             return source
+        } else {
+            const _s = source as _HashMap
+            const _t = {} as _HashMap
+            for (const key of Object.keys(_s)) {
+                _t[key] = copy(_s[key])
+            }
+            return _t as T
         }
-        const _t = {} as T
-        for (const key of Object.keys(source)) {
-            _t[key] = copy(source[key])
-        }
-        return _t
     }
     return source
 }
 
-const deepCopy = <T extends object>(source: object): T => {
+const deepCopy = <T extends _HashMap>(source: T): T => {
     if (typeof source != 'object' || source === null || Array.isArray(source)) {
         throw new TypeError()
     }
     if (source == {}) {
         return {} as T
     }
-    const _t = {} as T
+    const _t = {} as _HashMap
     for (const key of Object.keys(source)) {
         _t[key] = copy(source[key])
     }
-    return _t
+    return _t as T
 }
 
 export { print, println, panic, deepCopy, exit }
