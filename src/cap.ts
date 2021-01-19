@@ -204,7 +204,10 @@ const BUILTIN = {
                     )
                     const sl1 = opts[opt].about
                     const _d = _defaultParse(opts[opt].default)
-                    const sl2 = _d ? ` [default: ${_d}]` : undefined
+                    // TODO:
+                    const sl2 = _d
+                        ? `${sl1 ? ' ' : ''}[default: ${_d}]`
+                        : undefined
                     mw = mw < sl0.length ? sl0.length : mw
                     optlns.push([sl0, sl1, sl2])
                 }
