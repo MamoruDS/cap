@@ -16,7 +16,7 @@ const println = (output: string): void => {
     print(output + '\n')
 }
 
-const exit = (code: number = 0): never => {
+const exit = (code = 0): never => {
     return PLAT.exit(code) as never
 }
 

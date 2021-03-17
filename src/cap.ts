@@ -26,7 +26,7 @@ type TypeConv<T> = T extends 'string'
 
 type Option<
     T extends 'string' | 'boolean' | 'number' | 'array',
-    C extends Options = {}
+    C extends Options = any
 > = {
     type: T
     alias?: string
@@ -101,7 +101,7 @@ const parser = <T extends Options>(
         }
     }
 
-    for (let a of args) {
+    for (const a of args) {
         const r = new RegExp(/^([-]{1,2})([^\s|=]+)=?([^$]{0,})/)
         const m = r.exec(a)
         if (m == null) {
