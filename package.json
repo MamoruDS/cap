@@ -1,6 +1,6 @@
 {
     "name": "@mamoruds/cap",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Simple cli arguments parser written in typescript for node/deno",
     "main": "dist/main.js",
     "scripts": {
